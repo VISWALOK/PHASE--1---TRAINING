@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YummyTummy - Food Delivery</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; }
+    .container-centered { max-width: 480px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    .dashboard-container { max-width: 900px; margin: 30px auto; padding: 20px; }
+    .menu-item-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; background: white; display: flex; gap: 15px; align-items: center; }
+    .menu-item-card img { width: 100px; height: 80px; object-fit: cover; border-radius: 6px; }
+    .menu-item-info { flex-grow: 1; }
+    .delivery-tag { font-weight: 600; color: green; }
+    .btn-space { margin-right: 10px; }
+    #cartPreview { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 6px; max-height: 300px; overflow-y: auto; }
+    .cart-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    .nav-link { cursor: pointer; }
+    .error-text { color: red; font-size: 0.9em; }
+    footer { background-color: #343a40; color: white; padding: 20px 10px; text-align: center; margin-top: 40px; }
+    footer a { color: #ffc107; text-decoration: none; }
+    .text-success-strong { color: #198754; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#" onclick="showLoginPage()">YummyTummy</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" onclick="showLoginPage()">Login</a></li>
+          <li class="nav-item"><a class="nav-link" onclick="showRegisterPage()">Register</a></li>
+          <li class="nav-item" id="navLogout" style="display:none;"><a class="nav-link" onclick="logoutUser()">Logout</a></li>
+          <li class="nav-item" id="navWelcome" style="display:none;"><span class="nav-link disabled" id="welcomeUser"></span></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Register Page -->
+  <div id="registerPage" class="container-centered" style="display:none;">
+    <h3 class="mb-4 text-center">Customer Registration</h3>
+    <form id="registerForm" novalidate>
+      <!-- fields... -->
+      <div class="mb-3"><label class="form-label">User ID</label><input id="userId" class="form-control" required /><div id="userIdError" class="error-text"></div></div>
+      <div class="mb-3"><label class="form-label">Full Name</label><input id="fullName" class="form-control" required /><div id="fullNameError" class="error-text"></div></div>
+      <div class="mb-3"><label class="form-label">Address</label><textarea id="address" class="form-control" rows="2" required></textarea><div id="addressError" class="error-text"></div></div>
+      <div class="mb-3"><label class="form-label">Contact Number</label><input id="contactNumber" class="form-control" placeholder="+1234567890" required /><div id="contactNumberError" class="error-text"></div></div>
+      <div class="mb-3"><label class="form-label">Email</label><input id="email" class="form-control" type="email" required /><div id="emailError" class="error-text"></div></div>
+      <div class="mb-3"><label class="form-label">Password</label><input id="password" class="form-control" type="password" minlength="6" required /><div id="passwordError" class="error-text"></div></div>
+      <button class="btn btn-primary w-100">Register</button>
+    </form>
+    <p class="mt-3 text-center">Already have an account? <a href="#" onclick="showLoginPage()">Login here</a></p>
+  </div>
+
+  <!-- Login Page -->
+  <div id="loginPage" class="container-centered">
+    <h3 class="mb-4 text-center">Login</h3>
+    <form id="loginForm" novalidate>
+      <div class="mb-3"><label class="form-label">Email</label><input id="loginEmail" type="email" class="form-control" required /><div id="loginEmailError" class="error-text"></div></div>
+      <div class="mb-3"><label class="form-label">Password</label><input id="loginPassword" type="password" class="form-control" required /><div id="loginPasswordError" class="error-text"></div></div>
+      <button class="btn btn-success w-100">Login</button>
+    </form>
+    <p class="mt-3 text-center">New user? <a href="#" onclick="showRegisterPage()">Register here</a></p>
+  </div>
+
+  <!-- Customer Dashboard -->
+  <div id="customerDashboard" class="dashboard-container" style="display:none;">
+    <h3 class="mb-4">Welcome, <span id="customerName"></span>!</h3>
+    <div class="row" id="menuItemsContainer"></div>
+    <h5>Your Cart</h5>
+    <div id="cartPreview" class="mb-3"><p>No items in cart.</p></div>
+    <button id="placeOrderBtn" class="btn btn-primary" onclick="placeOrder()" disabled>Place Order</button>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminDashboard" class="dashboard-container" style="display:none;">
+    <h3 class="mb-4">Admin Panel</h3>
+    <div id="adminMenuItems"></div>
+    <hr />
+    <h5>Add New Menu Item</h5>
+    <form id="addMenuItemForm" class="row g-3 needs-validation" novalidate>
+      <!-- fields... -->
+      <div class="col-md-6"><input id="newMenuItemName" class="form-control" placeholder="Item Name" required /><div class="invalid-feedback">Required.</div></div>
+      <div class="col-md-3"><input id="newMenuItemPrice" type="number" class="form-control" placeholder="Price" required /><div class="invalid-feedback">Required.</div></div>
+      <div class="col-md-3"><input id="newMenuItemDate" type="date" class="form-control" required /><div class="invalid-feedback">Required.</div></div>
+      <div class="col-md-6"><select id="newMenuItemDelivery" class="form-select" required><option value="">Delivery Type</option><option>Free Delivery</option><option>Paid Delivery</option></select><div class="invalid-feedback">Required.</div></div>
+      <div class="col-md-6"><input id="newMenuItemImage" type="url" class="form-control" placeholder="Image URL" required /><div class="invalid-feedback">Required.</div></div>
+      <div class="col-12"><button class="btn btn-success">Add Item</button></div>
+    </form>
+  </div>
+
+  <!-- Billing / Payment Page -->
+  <div id="billingPage" class="container-centered" style="display:none;">
+    <h3 class="mb-4 text-center">Billing & Payment</h3>
+    <p class="text-center">Amount to pay: <span id="billingAmount" class="text-success-strong"></span></p>
+    <form id="billingForm">
+      <div class="mb-3"><input class="form-control" placeholder="Card Number" required /></div>
+      <div class="mb-3"><input class="form-control" placeholder="Card Holder Name" required /></div>
+      <div class="row mb-3">
+        <div class="col"><input class="form-control" placeholder="MM/YY" required /></div>
+        <div class="col"><input type="password" class="form-control" placeholder="CVV" required /></div>
+      </div>
+      <button type="button" class="btn btn-success w-100" onclick="makePayment()">Pay Now</button>
+    </form>
+    <div id="paymentSuccessMsg" class="mt-4 text-center text-success fw-bold" style="display:none;">✅ Payment successful! Order confirmed.</div>
+  </div>
+
+  <!-- Footer -->
+  <footer><p>Contact us: <a href="mailto:info@yummytummy.com">info@yummytummy.com</a> | Phone: +1234567890</p><p>&copy; 2025 YummyTummy</p></footer>
+
+  <!-- Scripts -->
+  <script>
+    // Data & state
+    const admins = [{ email: "admin@yummytummy.com", password: "admin123", name: "Admin User" }];
+    let menuItems = JSON.parse(localStorage.getItem("menuItems") || "[]");
+    if (!menuItems.length) {
+      menuItems = [
+        { id:1,name:"Cheese Burger",price:5.99,date:"2025-07-20",delivery:"Free Delivery",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd" },
+        { id:2,name:"Margherita Pizza",price:8.99,date:"2025-07-22",delivery:"Paid Delivery",image:"https://images.unsplash.com/photo-1548365328-94057a82b5aa" },
+        { id:3,name:"Caesar Salad",price:6.50,date:"2025-07-19",delivery:"Free Delivery",image:"https://images.unsplash.com/photo-1562967916-eb82221dfb24" }
+      ];
+      localStorage.setItem("menuItems", JSON.stringify(menuItems));
+    }
+    let currentUser = null, cart = [];
+
+    // Page show/hide
+    function hideAllPages() {
+      ["registerPage","loginPage","customerDashboard","adminDashboard","billingPage"].forEach(id => document.getElementById(id).style.display = "none");
+    }
+    function setNavbarLogged(isLoggedIn) {
+      document.getElementById("navLogout").style.display = isLoggedIn ? "block":"none";
+      document.getElementById("navWelcome").style.display = isLoggedIn ? "block":"none";
+    }
+    function showRegisterPage(){ hideAllPages(); document.getElementById("registerPage").style.display="block"; setNavbarLogged(false);}
+    function showLoginPage(){ hideAllPages(); document.getElementById("loginPage").style.display="block"; setNavbarLogged(false);}
+    function showCustomerDashboard(){ hideAllPages(); document.getElementById("customerDashboard").style.display="block"; setNavbarLogged(true); document.getElementById("welcomeUser").textContent = `Hello, ${currentUser.fullName}`; loadMenuItems(); loadCartPreview();}
+    function showAdminDashboard(){ hideAllPages(); document.getElementById("adminDashboard").style.display="block"; setNavbarLogged(true); document.getElementById("welcomeUser").textContent = `Hi Admin`; loadAdminItems(); }
+
+    // Register & Login
+    document.getElementById("registerForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const u = document.getElementById("userId").value.trim(), n = document.getElementById("fullName").value.trim(), a = document.getElementById("address").value.trim(), c = document.getElementById("contactNumber").value.trim(), eL = document.getElementById("email").value.trim().toLowerCase(), p = document.getElementById("password").value;
+      if (!u||!n||!a||!c.match(/^\+?\d{7,15}$/)||!eL.match(/^\S+@\S+\.\S+$/)||p.length<6) { alert("Please fill valid fields."); return; }
+      const cs = JSON.parse(localStorage.getItem("customers")||"[]");
+      if (cs.find(x=>x.email===eL)) { alert("Email exists."); return; }
+      cs.push({ userId:u,fullName:n,address:a,contactNumber:c,email:eL,password:p });
+      localStorage.setItem("customers", JSON.stringify(cs));
+      alert("Registered! Please login.");
+      showLoginPage();
+    });
+    document.getElementById("loginForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const eL = document.getElementById("loginEmail").value.trim().toLowerCase(), p = document.getElementById("loginPassword").value;
+      let user = admins.find(x=>x.email===eL && x.password===p);
+      if (user) { currentUser=user; showAdminDashboard(); return; }
+      const cs = JSON.parse(localStorage.getItem("customers")||"[]");
+      user = cs.find(x=>x.email===eL && x.password===p);
+      if (user) { currentUser=user; showCustomerDashboard(); return; }
+      alert("Invalid credentials");
+    });
+
+    // Menu & Cart logic
+    function loadMenuItems(){
+      const c = document.getElementById("menuItemsContainer");
+      c.innerHTML = "";
+      menuItems = JSON.parse(localStorage.getItem("menuItems")||"[]");
+      for (const it of menuItems) {
+        const col = document.createElement("div"); col.className = "col-md-6";
+        const card = document.createElement("div"); card.className = "menu-item-card";
+        const img = document.createElement("img"); img.src = it.image; img.alt = it.name;
+        const info = document.createElement("div"); info.className = "menu-item-info";
+        info.innerHTML = `<h5>${it.name}</h5><p>Price: $${it.price.toFixed(2)}</p><p>Available on: ${it.date}</p><p class="delivery-tag">${it.delivery}</p>`;
+        const btn = document.createElement("button"); btn.className = "btn btn-primary btn-space"; btn.textContent = "Add to Cart"; btn.onclick=()=>addToCart(it);
+        card.append(img, info, btn); col.append(card); c.append(col);
+      }
+    }
+    function addToCart(it) {
+      const f = cart.find(x=>x.id===it.id);
+      if (f) f.quantity++; else cart.push({...it, quantity:1});
+      loadCartPreview();
+    }
+    function removeFromCart(id) {
+      cart = cart.filter(x=>x.id!==id);
+      loadCartPreview();
+    }
+    function loadCartPreview() {
+      const pr = document.getElementById("cartPreview");
+      pr.innerHTML = cart.length ? "" : "<p>No items in cart.</p>";
+      let tot = 0;
+      cart.forEach(it => {
+        tot += it.price * it.quantity;
+        const div = document.createElement("div"); div.className = "cart-item";
+        div.innerHTML = `${it.name} x ${it.quantity} ($${(it.price*it.quantity).toFixed(2)}) <button class="btn btn-sm btn-danger" onclick="removeFromCart(${it.id})">&times;</button>`;
+        pr.append(div);
+      });
+      if (cart.length) { const d = document.createElement("div"); d.className="fw-bold mt-2"; d.textContent=`Total: $${tot.toFixed(2)}`; pr.append(d); }
+      document.getElementById("placeOrderBtn").disabled = !cart.length;
+    }
+
+    // Admin add/edit/delete
+    function loadAdminItems() {
+      const ct = document.getElementById("adminMenuItems");
+      ct.innerHTML = "";
+      menuItems.forEach(it=>{
+        const div = document.createElement("div"); div.className="menu-item-card";
+        const img = document.createElement("img"); img.src=it.image; img.alt=it.name;
+        const info = document.createElement("div"); info.className="menu-item-info";
+        info.innerHTML = `<input id="name_${it.id}" class="form-control mb-1" value="${it.name}"/>`
+          + `<input id="price_${it.id}" type="number" class="form-control mb-1" value="${it.price}"/>`
+          + `<input id="date_${it.id}" type="date" class="form-control mb-1" value="${it.date}"/>`
+          + `<select id="delivery_${it.id}" class="form-select mb-1"><option${it.delivery==="Free Delivery"?' selected':''}>Free Delivery</option><option${it.delivery==="Paid Delivery"?' selected':''}>Paid Delivery</option></select>`
+          + `<input id="image_${it.id}" class="form-control mb-1" value="${it.image}"/>`
+          + `<button class="btn btn-sm btn-success btn-space" onclick="saveItem(${it.id})">Save</button><button class="btn btn-sm btn-danger" onclick="deleteItem(${it.id})">Delete</button>`;
+        div.append(img, info); ct.append(div);
+      });
+    }
+    function saveItem(id){
+      const n = document.getElementById(`name_${id}`).value.trim();
+      const p = parseFloat(document.getElementById(`price_${id}`).value);
+      const d = document.getElementById(`date_${id}`).value;
+      const dl = document.getElementById(`delivery_${id}`).value;
+      const im = document.getElementById(`image_${id}`).value.trim();
+      if (!n||isNaN(p)||!d||!dl||!im) { alert("Invalid"); return; }
+      menuItems = menuItems.map(x=>x.id===id?{id:n,date:d,delivery:dl,price:p,image:im}:x);
+      localStorage.setItem("menuItems", JSON.stringify(menuItems));
+      alert("Updated"); loadAdminItems();
+    }
+    function deleteItem(id){ if (!confirm("Sure?")) return; menuItems = menuItems.filter(x=>x.id!==id); localStorage.setItem("menuItems", JSON.stringify(menuItems)); loadAdminItems(); }
+
+    document.getElementById("addMenuItemForm").addEventListener("submit", e=>{
+      e.preventDefault();
+      const n=document.getElementById("newMenuItemName").value.trim();
+      const p=parseFloat(document.getElementById("newMenuItemPrice").value);
+      const d=document.getElementById("newMenuItemDate").value;
+      const dl=document.getElementById("newMenuItemDelivery").value;
+      const im=document.getElementById("newMenuItemImage").value.trim();
+      if(!n||isNaN(p)||!d||!dl||!im){ alert("Fill properly"); return; }
+      const id = menuItems.length ? Math.max(...menuItems.map(x=>x.id))+1 : 1;
+      menuItems.push({id,name:n,price:p,date:d,delivery:dl,image:im});
+      localStorage.setItem("menuItems", JSON.stringify(menuItems));
+      alert("Added"); e.target.reset(); loadAdminItems();
+    });
+
+    // Order -> Billing -> Payment
+    function placeOrder(){
+      if(!cart.length) return;
+      const total = cart.reduce((a,b)=>a + b.price*b.quantity,0);
+      cart = []; loadCartPreview();
+      hideAllPages();
+      document.getElementById("billingPage").style.display="block";
+      document.getElementById("billingAmount").textContent=`$${total.toFixed(2)}`;
+    }
+    function makePayment(){
+      document.getElementById("paymentSuccessMsg").style.display="block";
+      setTimeout(()=>{
+        alert("Payment done! Redirecting to Dashboard.");
+        showCustomerDashboard();
+        document.getElementById("paymentSuccessMsg").style.display="none";
+      }, 2000);
+    }
+
+    // Init
+    window.onload = () => {
+      const e = localStorage.getItem("currentUserEmail");
+      if (e) {
+        let user = admins.find(x=>x.email===e) || JSON.parse(localStorage.getItem("customers")||"[]").find(x=>x.email===e);
+        if (user) { currentUser = user; user.email===admins[0].email ? showAdminDashboard() : showCustomerDashboard(); return; }
+      }
+      showLoginPage();
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
